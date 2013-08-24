@@ -106,10 +106,10 @@ scan_mounted_volumes()
      */
     bufp = buf;
     while (nbytes > 0) {
-        char device[PATH_MAX];
-        char mount_point[PATH_MAX];
+        char device[64];
+        char mount_point[64];
         char filesystem[64];
-        char flags[256];
+        char flags[128];
         int matches;
 
         /* %as is a gnu extension that malloc()s a string for each field.

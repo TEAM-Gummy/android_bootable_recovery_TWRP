@@ -41,8 +41,6 @@
 #include "roots.h"
 #include "recovery_ui.h"
 
-#include "voldclient/voldclient.h"
-
 #include "adb_install.h"
 #include "minadbd/adb.h"
 
@@ -457,7 +455,7 @@ prepend_title(char** headers) {
 }
 
 int
-get_menu_selection(const char** headers, char** items, int menu_only,
+get_menu_selection(char** headers, char** items, int menu_only,
                    int initial_selection) {
     // throw away keys pressed previously, so user doesn't
     // accidentally trigger menu items.
@@ -467,7 +465,7 @@ get_menu_selection(const char** headers, char** items, int menu_only,
     int selected = initial_selection;
     int chosen_item = -1;
 
-    while (chosen_item < 0 && chosen_item != GO_BACK && chosen_item != REFRESH) {
+    while (chosen_item < 0 && chosen_item != GO_BACK) {
         int key = ui_wait_key();
         int visible = ui_text_visible();
 
@@ -482,9 +480,6 @@ get_menu_selection(const char** headers, char** items, int menu_only,
         }
         else if (key == -2) {
             return GO_BACK;
-        }
-        else if (key == -6) {
-            return REFRESH;
         }
 
         int action = ui_handle_key(key, visible);
@@ -514,9 +509,6 @@ get_menu_selection(const char** headers, char** items, int menu_only,
                     break;
                 case GO_BACK:
                     chosen_item = GO_BACK;
-                    break;
-                case REFRESH:
-                    chosen_item = REFRESH;
                     break;
             }
         } else if (!menu_only) {
@@ -673,7 +665,7 @@ wipe_data(int confirm) {
         erase_volume("/datadata");
     }
     erase_volume("/sd-ext");
-    erase_volume(get_android_secure_path());
+    erase_volume("/sdcard/.android_secure");
     ui_print("Data wipe complete.\n");
 }
 
@@ -711,50 +703,41 @@ prompt_and_wait() {
         chosen_item = device_perform_action(chosen_item);
 
         int status;
-        int ret = 0;
+        switch (chosen_item) {
+            case ITEM_REBOOT:
+                poweroff = 0;
+                return;
 
-        for (;;) {
-            switch (chosen_item) {
-                case ITEM_REBOOT:
-                    poweroff = 0;
-                    return;
+            case ITEM_WIPE_DATA:
+                wipe_data(ui_text_visible());
+                if (!ui_text_visible()) return;
+                break;
 
-                case ITEM_WIPE_DATA:
-                    wipe_data(ui_text_visible());
+            case ITEM_WIPE_CACHE:
+                if (confirm_selection("Confirm wipe?", "Yes - Wipe Cache"))
+                {
+                    ui_print("\n-- Wiping cache...\n");
+                    erase_volume("/cache");
+                    ui_print("Cache wipe complete.\n");
                     if (!ui_text_visible()) return;
-                    break;
+                }
+                break;
 
-                case ITEM_WIPE_CACHE:
-                    if (confirm_selection("Confirm wipe?", "Yes - Wipe Cache"))
-                    {
-                        ui_print("\n-- Wiping cache...\n");
-                        erase_volume("/cache");
-                        ui_print("Cache wipe complete.\n");
-                        if (!ui_text_visible()) return;
-                    }
-                    break;
+            case ITEM_APPLY_ZIP:
+                show_install_update_menu();
+                break;
 
-                case ITEM_APPLY_ZIP:
-                    ret = show_install_update_menu();
-                    break;
+            case ITEM_NANDROID:
+                show_nandroid_menu();
+                break;
 
-                case ITEM_NANDROID:
-                    ret = show_nandroid_menu();
-                    break;
+            case ITEM_PARTITION:
+                show_partition_menu();
+                break;
 
-                case ITEM_PARTITION:
-                    ret = show_partition_menu();
-                    break;
-
-                case ITEM_ADVANCED:
-                    ret = show_advanced_menu();
-                    break;
-            }
-            if (ret == REFRESH) {
-                ret = 0;
-                continue;
-            }
-            break;
+            case ITEM_ADVANCED:
+                show_advanced_menu();
+                break;
         }
     }
 }
@@ -803,38 +786,8 @@ setup_adbd() {
 void reboot_main_system(int cmd, int flags, char *arg) {
     verify_root_and_recovery();
     finish_recovery(NULL); // sync() in here
-    vold_unmount_all();
     android_reboot(cmd, flags, arg);
 }
-
-static int v_changed = 0;
-int volumes_changed() {
-    int ret = v_changed;
-    if (v_changed == 1)
-        v_changed = 0;
-    return ret;
-}
-
-static int handle_volume_hotswap(char* label, char* path) {
-    v_changed = 1;
-    return 0;
-}
-
-static int handle_volume_state_changed(char* label, char* path, int state) {
-    if (state == State_Checking ||
-        state == State_Mounted ||
-        state == State_Idle ||
-        state == State_Formatting ||
-        state == State_Shared)
-    ui_print("%s: %s\n", path, stateToStr(state));
-    return 0;
-}
-
-static struct vold_callbacks v_callbacks = {
-    .state_changed = handle_volume_state_changed,
-    .disk_added = handle_volume_hotswap,
-    .disk_removed = handle_volume_hotswap,
-};
 
 int
 main(int argc, char **argv) {
@@ -895,22 +848,6 @@ main(int argc, char **argv) {
             setup_adbd();
             return 0;
         }
-        if (strstr(argv[0], "start")) {
-            property_set("ctl.start", argv[1]);
-            return 0;
-        }
-        if (strstr(argv[0], "stop")) {
-            property_set("ctl.stop", argv[1]);
-            return 0;
-        }
-        if (strstr(argv[0], "fsck_msdos"))
-            return fsck_msdos_main(argc, argv);
-        if (strstr(argv[0], "newfs_msdos"))
-            return newfs_msdos_main(argc, argv);
-        if (strstr(argv[0], "minivold"))
-            return vold_main(argc, argv);
-        if (strstr(argv[0], "vdc"))
-            return vdc_main(argc, argv, true);
         return busybox_driver(argc, argv);
     }
     __system("/sbin/postrecoveryboot.sh");
@@ -928,8 +865,6 @@ main(int argc, char **argv) {
     ui_print(EXPAND(RECOVERY_VERSION)"\n");
     load_volume_table();
     process_volumes();
-    vold_client_start(&v_callbacks, 1);
-    setup_legacy_storage_paths();
     LOGI("Processing arguments.\n");
     ensure_path_mounted(LAST_LOG_FILE);
     rotate_last_logs(5);
@@ -1077,8 +1012,6 @@ main(int argc, char **argv) {
 
     // Otherwise, get ready to boot the main system...
     finish_recovery(send_intent);
-
-    vold_unmount_all();
 
     sync();
     if(!poweroff) {

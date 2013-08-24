@@ -71,7 +71,6 @@ int device_wipe_data();
 #define HIGHLIGHT_DOWN      -3
 #define SELECT_ITEM         -4
 #define GO_BACK             -5
-#define REFRESH             -6
 
 #define ITEM_REBOOT          0
 #define ITEM_APPLY_EXT       1
@@ -95,7 +94,7 @@ extern char* MENU_ITEMS[];
 extern int ui_root_menu;
 
 int
-get_menu_selection(const char** headers, char** items, int menu_only, int initial_selection);
+get_menu_selection(char** headers, char** items, int menu_only, int initial_selection);
 
 void
 set_sdcard_update_bootloader_message();
