@@ -45,9 +45,15 @@
 
 #include "adb_install.h"
 
+#ifdef ENABLE_LOKI
+#include "compact_loki.h"
+#endif
+
 int signature_check_enabled = 1;
+#ifdef ENABLE_LOKI
+int loki_support_enabled = 1;
+#endif
 int script_assert_enabled = 1;
-static const char *SDCARD_UPDATE_FILE = "update.zip";
 
 int
 get_filtered_menu_selection(const char** headers, char** items, int menu_only, int initial_selection, int items_count) {
@@ -93,6 +99,10 @@ void write_recovery_version() {
     char path[PATH_MAX];
     sprintf(path, "%s%sclockworkmod/.recovery_version", get_primary_storage_path(), (is_data_media() ? "/0/" : "/"));
     write_string_to_file(path,EXPAND(RECOVERY_VERSION) "\n" EXPAND(TARGET_DEVICE));
+    // force unmount /data on /data/media devices as we call this on recovery start
+    ignore_data_media_workaround(1);
+    ensure_path_unmounted(path);
+    ignore_data_media_workaround(0);
 }
 
 void
@@ -101,6 +111,15 @@ toggle_signature_check()
     signature_check_enabled = !signature_check_enabled;
     ui_print("Signature Check: %s\n", signature_check_enabled ? "Enabled" : "Disabled");
 }
+
+#ifdef ENABLE_LOKI
+void
+toggle_loki_support()
+{
+    loki_support_enabled = !loki_support_enabled;
+    ui_print("Loki Support: %s\n", loki_support_enabled ? "Enabled" : "Disabled");
+}
+#endif
 
 int install_zip(const char* packagefilepath)
 {
@@ -115,6 +134,14 @@ int install_zip(const char* packagefilepath)
         ui_print("Installation aborted.\n");
         return 1;
     }
+#ifdef ENABLE_LOKI
+    if(loki_support_enabled) {
+       ui_print("Checking if loki-fying is needed");
+       if (loki_check() != 0) {
+           return 1;
+       }
+    }
+#endif
     ui_set_background(BACKGROUND_ICON_NONE);
     ui_print("\nInstall from sdcard complete.\n");
     return 0;
@@ -166,7 +193,6 @@ int show_install_update_menu()
                 break;
             case ITEM_CHOOSE_ZIP:
                 show_choose_zip_menu(primary_path);
-                write_recovery_version();
                 break;
             case ITEM_APPLY_SIDELOAD:
                 apply_from_adb();
@@ -279,7 +305,7 @@ char** gather_files(const char* directory, const char* fileExtensionOrDirectory,
     }
 
     if(closedir(dir) < 0) {
-        LOGE("Failed to close directory.");
+        LOGE("Failed to close directory.\n");
     }
 
     if (total==0) {
@@ -475,6 +501,7 @@ static int control_usb_storage(bool on)
             } else {
                 vold_unshare_volume(v->mount_point, 1);
             }
+            property_set("sys.storage.ums_enabled", on ? "1" : "0");
             num++;
         }
     }
@@ -517,18 +544,8 @@ int confirm_selection(const char* title, const char* confirm)
 
     char* confirm_str = strdup(confirm);
     const char* confirm_headers[]  = {  title, "  THIS CAN NOT BE UNDONE.", "", NULL };
-    int one_confirm = 0 == stat("/sdcard/clockworkmod/.one_confirm", &info);
-#ifdef BOARD_TOUCH_RECOVERY
-    one_confirm = 1;
-#endif
-    if (one_confirm) {
-        char* items[] = { "No",
-                        confirm_str, //" Yes -- wipe partition",   // [1]
-                        NULL };
-        int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
-        ret = (chosen_item == 1);
-    }
-    else {
+    int many_confirm = 0 == stat("/sdcard/clockworkmod/.many_confirm", &info);
+    if (many_confirm) {
         char* items[] = { "No",
                         "No",
                         "No",
@@ -543,6 +560,13 @@ int confirm_selection(const char* title, const char* confirm)
                         NULL };
         int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
         ret = (chosen_item == 7);
+    }
+    else {
+        char* items[] = { "No",
+                        confirm_str, //" Yes -- wipe partition",   // [1]
+                        NULL };
+        int chosen_item = get_menu_selection(confirm_headers, items, 0, 0);
+        ret = (chosen_item == 1);
     }
     free(confirm_str);
     return ret;
@@ -628,12 +652,22 @@ int format_device(const char *device, const char *path, const char *fs_type) {
         reset_ext4fs_info();
         int result = make_ext4fs(device, length, v->mount_point, sehandle);
         if (result != 0) {
-            LOGE("format_volume: make_extf4fs failed on %s\n", device);
+            LOGE("format_volume: make_ext4fs failed on %s\n", device);
             return -1;
         }
         return 0;
     }
 
+#ifdef USE_F2FS
+    if (strcmp(fs_type, "f2fs") == 0) {
+        int result = make_f2fs_main(device, v->mount_point);
+        if (result != 0) {
+            LOGE("format_volume: mkfs.f2f2 failed on %s\n", device);
+            return -1;
+        }
+        return 0;
+    }
+#endif
     return format_unknown_device(device, path, fs_type);
 }
 
@@ -651,7 +685,7 @@ int format_unknown_device(const char *device, const char* path, const char *fs_t
         Volume *vol = volume_for_path("/sd-ext");
         if (vol == NULL || 0 != stat(vol->blk_device, &st))
         {
-            ui_print("No app2sd partition found. Skipping format of /sd-ext.\n");
+            LOGI("No app2sd partition found. Skipping format of /sd-ext.\n");
             return 0;
         }
     }
@@ -729,6 +763,7 @@ typedef struct {
 typedef struct {
     char txt[255];
     char path[PATH_MAX];
+    char type[255];
 } FormatMenuEntry;
 
 int is_safe_to_format(char* name)
@@ -795,6 +830,7 @@ int show_partition_menu()
             if (is_safe_to_format(v->mount_point)) {
                 sprintf(format_menu[formatable_volumes].txt, "format %s", v->mount_point);
                 sprintf(format_menu[formatable_volumes].path, "%s", v->mount_point);
+                sprintf(format_menu[formatable_volumes].type, "%s", v->fs_type);
                 ++formatable_volumes;
             }
         }
@@ -802,6 +838,7 @@ int show_partition_menu()
         {
             sprintf(format_menu[formatable_volumes].txt, "format %s", v->mount_point);
             sprintf(format_menu[formatable_volumes].path, "%s", v->mount_point);
+            sprintf(format_menu[formatable_volumes].type, "%s", v->fs_type);
             ++formatable_volumes;
         }
     }
@@ -874,6 +911,13 @@ int show_partition_menu()
             FormatMenuEntry* e = &format_menu[chosen_item];
 
             sprintf(confirm_string, "%s - %s", e->path, confirm_format);
+
+            // support user choice fstype when formatting external storage
+            // ensure fstype==auto because most devices with internal vfat storage cannot be formatted to other types
+            if (strcmp(e->type, "auto") == 0) {
+                format_sdcard(e->path);
+                continue;
+            }
 
             if (!confirm_selection(confirm_string, confirm))
                 continue;
@@ -989,18 +1033,28 @@ static void choose_default_backup_format() {
                                 NULL
     };
 
+    int fmt = nandroid_get_default_backup_format();
+
     char **list;
     char* list_tar_default[] = { "tar (default)",
         "dup",
+        "tar + gzip",
         NULL
     };
     char* list_dup_default[] = { "tar",
         "dup (default)",
+        "tar + gzip",
         NULL
     };
-
-    if (nandroid_get_default_backup_format() == NANDROID_BACKUP_FORMAT_DUP) {
+    char* list_tgz_default[] = { "tar",
+        "dup",
+        "tar + gzip (default)",
+        NULL
+    };
+    if (fmt == NANDROID_BACKUP_FORMAT_DUP) {
         list = list_dup_default;
+    } else if (fmt == NANDROID_BACKUP_FORMAT_TGZ) {
+        list = list_tgz_default;
     } else {
         list = list_tar_default;
     }
@@ -1014,6 +1068,10 @@ static void choose_default_backup_format() {
         case 1:
             write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "dup");
             ui_print("Default backup format set to dedupe.\n");
+            break;
+        case 2:
+            write_string_to_file(NANDROID_BACKUP_FORMAT_FILE, "tgz");
+            ui_print("Default backup format set to tar + gzip.\n");
             break;
     }
 }
@@ -1109,20 +1167,16 @@ int show_nandroid_menu()
                         sprintf(backup_path, "%s/%s", chosen_path, path_fmt);
                     }
                     nandroid_backup(backup_path);
-                    write_recovery_version();
                 }
                 break;
             case 1:
                 show_nandroid_restore_menu(chosen_path);
-                write_recovery_version();
                 break;
             case 2:
                 show_nandroid_delete_menu(chosen_path);
-                write_recovery_version();
                 break;
             case 3:
                 show_nandroid_advanced_restore_menu(chosen_path);
-                write_recovery_version();
                 break;
             default:
                 break;
@@ -1138,6 +1192,82 @@ out:
     for (i = 0; i < max_backup_index; i++)
         free(list[i]);
     return chosen_item;
+}
+
+void format_sdcard(const char* volume) {
+    if (is_data_media_volume_path(volume))
+        return;
+
+    Volume *vol = volume_for_path(volume);
+    if (vol == NULL || strcmp(vol->fs_type, "auto") != 0)
+        return;
+    if (!fs_mgr_is_voldmanaged(vol) && !can_partition(volume))
+        return;
+
+    char* headers[] = {"Format device:", volume, "", NULL };
+
+    static char* list[] = { "default",
+                            "vfat",
+                            "exfat",
+                            "ntfs",
+                            "ext4",
+                            "ext3",
+                            "ext2",
+                            NULL
+    };
+
+    int ret = -1;
+    char cmd[PATH_MAX];
+    int chosen_item = get_menu_selection(headers, list, 0, 0);
+    if (chosen_item < 0) // REFRESH or GO_BACK
+        return;
+    if (!confirm_selection( "Confirm formatting?", "Yes - Format device"))
+        return;
+
+    Volume *v = volume_for_path(volume);
+    if (ensure_path_unmounted(v->mount_point) != 0)
+        return;
+
+    switch (chosen_item)
+    {
+        case 0:
+            ret = format_volume(v->mount_point);
+            break;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            if (fs_mgr_is_voldmanaged(v)) {
+                ret = vold_custom_format_volume(v->mount_point, list[chosen_item], 1) == CommandOkay ? 0 : -1;
+            } else if (strcmp(list[chosen_item], "vfat") == 0) {
+                sprintf(cmd, "/sbin/newfs_msdos -F 32 -O android -c 8 %s", v->blk_device);
+                ret = __system(cmd);
+            } else if (strcmp(list[chosen_item], "exfat") == 0) {
+                sprintf(cmd, "/sbin/mkfs.exfat %s", v->blk_device);
+                ret = __system(cmd);
+            } else if (strcmp(list[chosen_item], "ntfs") == 0) {
+                sprintf(cmd, "/sbin/mkntfs -f %s", v->blk_device);
+                ret = __system(cmd);
+            } else if (strcmp(list[chosen_item], "ext4") == 0) {
+                ret = make_ext4fs(v->blk_device, v->length, volume, sehandle);
+            }
+            break;
+        case 5:
+        case 6:
+            {
+                // workaround for new vold managed volumes that cannot be recognized by prebuilt ext2/ext3 bins
+                const char *device = v->blk_device2;
+                if (device == NULL)
+                    device = v->blk_device;
+                ret = format_unknown_device(device, v->mount_point, list[chosen_item]);
+                break;
+            }
+    }
+
+    if (ret)
+        ui_print("Could not format %s (%s)\n", volume, list[chosen_item]);
+    else
+        ui_print("Done formatting %s (%s)\n", volume, list[chosen_item]);
 }
 
 static void partition_sdcard(const char* volume) {
@@ -1171,20 +1301,25 @@ static void partition_sdcard(const char* volume) {
     static const char* fstype_headers[] = {"Partition Type", "", NULL };
 
     int ext_size = get_menu_selection(ext_headers, ext_sizes, 0, 0);
-    if (ext_size == GO_BACK)
+    if (ext_size < 0)
         return;
 
     int swap_size = get_menu_selection(swap_headers, swap_sizes, 0, 0);
-    if (swap_size == GO_BACK)
+    if (swap_size < 0)
         return;
 
     int partition_type = get_menu_selection(fstype_headers, partition_types, 0, 0);
-    if (partition_type == GO_BACK)
+    if (partition_type < 0)
         return;
 
     char sddevice[256];
     Volume *vol = volume_for_path(volume);
-    strcpy(sddevice, vol->blk_device);
+
+    // can_partition() ensured either blk_device or blk_device2 has /dev/block/mmcblk format
+    if (strstr(vol->blk_device, "/dev/block/mmcblk") != NULL)
+        strcpy(sddevice, vol->blk_device);
+    else strcpy(sddevice, vol->blk_device2);
+
     // we only want the mmcblk, not the partition
     sddevice[strlen("/dev/block/mmcblkX")] = '\0';
     char cmd[PATH_MAX];
@@ -1206,16 +1341,27 @@ int can_partition(const char* volume) {
         LOGI("Can't format unknown volume: %s\n", volume);
         return 0;
     }
-
-    int vol_len = strlen(vol->blk_device);
-    // do not allow partitioning of a device that isn't mmcblkX or mmcblkXp1
-    if (vol->blk_device[vol_len - 2] == 'p' && vol->blk_device[vol_len - 1] != '1') {
-        LOGI("Can't partition unsafe device: %s\n", vol->blk_device);
+    if (strcmp(vol->fs_type, "auto") != 0) {
+        LOGI("Can't partition non-vfat: %s (%s)\n", volume, vol->fs_type);
         return 0;
     }
-    
-    if (strcmp(vol->fs_type, "vfat") != 0) {
-        LOGI("Can't partition non-vfat: %s\n", vol->fs_type);
+
+    // do not allow partitioning of a device that isn't mmcblkX or mmcblkXp1
+    // needed with new vold managed volumes and virtual device path links
+    int vol_len;
+    char *device = NULL;
+    if (strstr(vol->blk_device, "/dev/block/mmcblk") != NULL) {
+        device = vol->blk_device;
+    } else if (vol->blk_device2 != NULL && strstr(vol->blk_device2, "/dev/block/mmcblk") != NULL) {
+        device = vol->blk_device2;
+    } else {
+        LOGI("Can't partition non mmcblk device: %s\n", vol->blk_device);
+        return 0;
+    }
+
+    vol_len = strlen(device);
+    if (device[vol_len - 2] == 'p' && device[vol_len - 1] != '1') {
+        LOGI("Can't partition unsafe device: %s\n", device);
         return 0;
     }
 
@@ -1223,11 +1369,18 @@ int can_partition(const char* volume) {
 }
 
 
+#ifdef ENABLE_LOKI
+    #define FIXED_ADVANCED_ENTRIES 8
+#else
+    #define FIXED_ADVANCED_ENTRIES 7
+#endif
+
 int show_advanced_menu()
 {
     char buf[80];
     int i = 0, j = 0, chosen_item = 0;
-    static char* list[MAX_NUM_MANAGED_VOLUMES + 9];
+    /* Default number of entries if no compile-time extras are added */
+    static char* list[MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 1];
 
     char* primary_path = get_primary_storage_path();
     char** extra_paths = get_extra_storage_paths();
@@ -1238,7 +1391,7 @@ int show_advanced_menu()
                                 NULL
     };
 
-    memset(list, 0, MAX_NUM_MANAGED_VOLUMES + 9);
+    memset(list, 0, MAX_NUM_MANAGED_VOLUMES + FIXED_ADVANCED_ENTRIES + 1);
 
     list[0] = "reboot recovery";
 
@@ -1255,22 +1408,27 @@ int show_advanced_menu()
     list[4] = "report error";
     list[5] = "key test";
     list[6] = "show log";
+#ifdef ENABLE_LOKI
+    list[7] = "toggle loki support";
+#endif
 
+    char list_prefix[] = "partition ";
     if (can_partition(primary_path)) {
-        sprintf(buf, "partition %s", primary_path);
-        list[7] = strdup(buf);
+        sprintf(buf, "%s%s", list_prefix, primary_path);
+        list[FIXED_ADVANCED_ENTRIES] = strdup(buf);
         j++;
     }
 
     if (extra_paths != NULL) {
         for (i = 0; i < num_extra_volumes; i++) {
             if (can_partition(extra_paths[i])) {
-                sprintf(buf, "partition %s", extra_paths[i]);
-                list[7 + j] = strdup(buf);
+                sprintf(buf, "%s%s", list_prefix, extra_paths[i]);
+                list[FIXED_ADVANCED_ENTRIES + j] = strdup(buf);
                 j++;
             }
         }
     }
+    list[FIXED_ADVANCED_ENTRIES + j] = NULL;
 
     for (;;)
     {
@@ -1336,20 +1494,19 @@ int show_advanced_menu()
             case 6:
                 ui_printlogtail(12);
                 break;
+#ifdef ENABLE_LOKI
             case 7:
-                partition_sdcard(primary_path);
+                toggle_loki_support();
                 break;
+#endif
             default:
-                if (chosen_item >= 8) {
-                    partition_sdcard(list[chosen_item] + 10);
-                }
+                partition_sdcard(list[chosen_item] + strlen(list_prefix));
                 break;
         }
     }
-    free(list[7]);
-    if (extra_paths != NULL) {
-        for (; j >= 0; --j)
-            free(list[8 + j]);
+
+    for (; j > 0; --j) {
+        free(list[FIXED_ADVANCED_ENTRIES + j - 1]);
     }
     return chosen_item;
 }
@@ -1510,6 +1667,8 @@ int volume_main(int argc, char **argv) {
 }
 
 int verify_root_and_recovery() {
+    write_recovery_version();
+
     if (ensure_path_mounted("/system") != 0)
         return 0;
 

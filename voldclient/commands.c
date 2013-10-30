@@ -59,7 +59,7 @@ int vold_unmount_volume(const char* path, int force, int wait) {
     int state = vold_get_volume_state(path);
 
     if (state <= State_Idle) {
-        LOGI("Volume %s is not mounted", path);
+        LOGI("Volume %s is not mounted\n", path);
         return 0;
     }
 
@@ -89,7 +89,7 @@ int vold_unshare_volume(const char* path, int mount) {
     int ret = 0;
 
     if (state != State_Shared) {
-        LOGE("Volume %s is not shared - state=%d", path, state);
+        LOGE("Volume %s is not shared - state=%d\n", path, state);
         return 0;
     }
 
@@ -106,3 +106,34 @@ int vold_format_volume(const char* path, int wait) {
     const char* cmd[3] = { "volume", "format", path };
     return vold_command(3, cmd, wait);
 }
+
+int vold_custom_format_volume(const char* path, const char* fstype, int wait) {
+    const char* cmd[4] = { "volume", "format", path, fstype };
+    return vold_command(4, cmd, wait);
+}
+
+const char* volume_state_to_string(int state) {
+    if (state == State_Init)
+        return "Initializing";
+    else if (state == State_NoMedia)
+        return "No-Media";
+    else if (state == State_Idle)
+        return "Idle-Unmounted";
+    else if (state == State_Pending)
+        return "Pending";
+    else if (state == State_Mounted)
+        return "Mounted";
+    else if (state == State_Unmounting)
+        return "Unmounting";
+    else if (state == State_Checking)
+        return "Checking";
+    else if (state == State_Formatting)
+        return "Formatting";
+    else if (state == State_Shared)
+        return "Shared-Unmounted";
+    else if (state == State_SharedMnt)
+        return "Shared-Mounted";
+    else
+        return "Unknown-Error";
+}
+
