@@ -44,14 +44,14 @@
 
 	<variables>
 		<variable name="col1_x" value="13" />
-		<variable name="col2_x" value="860" />
-		<variable name="col_center_x" value="382" />
+		<variable name="col2_x" value="800" />
+		<variable name="col_center_x" value="410" />
 		<variable name="col_center_medium_x" value="550" />
 		<variable name="center_x" value="720" />
 		<variable name="row1_y" value="339" />
-		<variable name="row2_y" value="818" />
-		<variable name="row3_y" value="1297" />
-		<variable name="row4_y" value="1776" />
+		<variable name="row2_y" value="915" />
+		<variable name="row3_y" value="1480" />
+		<variable name="row4_y" value="2052" />
 
 		<!-- these two are unused? -->
 		<variable name="col1_center_x" value="238" />
@@ -79,11 +79,11 @@
 		<variable name="row16_text_y" value="1835" />
 		<variable name="row17_text_y" value="1935" />
 		<variable name="row18_text_y" value="2035" />
-		<variable name="zip_status_y" value="1226" />
+		<variable name="zip_status_y" value="1375" />
 		<variable name="tz_selected_y" value="319" />
 		<variable name="tz_set_y" value="1995" />
 		<variable name="tz_current_y" value="1895" />
-		<variable name="col_progressbar_x" value="`468" />
+		<variable name="col_progressbar_x" value="`100" />
 		<variable name="row_progressbar_y" value="2195" />
 		<variable name="col1_medium_x" value="13" />
 		<variable name="col2_medium_x" value="370" />
@@ -129,7 +129,7 @@
 		<variable name="console_scroll" value="#303030" />
 		<variable name="console_action_height" value="938" />
 		<variable name="console_install_height" value="1200" />
-		<variable name="console_installdone_height" value="1169" />
+		<variable name="console_installdone_height" value="950" />
 		<variable name="fileselector_x" value="6" />
 		<variable name="fileselector_width" value="1420" />
 		<variable name="fileselector_install_height" value="1556" />
