@@ -11,9 +11,9 @@
 
 	<resources>
 		<resource name="tg_background" type="image" filename="tg_background" />
-		<resource name="font" type="font" filename="Roboto-Condensed-40" />
-		<resource name="mediumfont" type="font" filename="Roboto-Condensed-40" />
-		<resource name="filelist" type="font" filename="Roboto-Condensed-40" />
+		<resource name="font" type="font" filename="Roboto-Condensed-50" />
+		<resource name="mediumfont" type="font" filename="Roboto-Condensed-50" />
+		<resource name="filelist" type="font" filename="Roboto-Condensed-50" />
 		<resource name="main_button" type="image" filename="menu-button" />
 		<resource name="file_icon" type="image" filename="file" />
 		<resource name="folder_icon" type="image" filename="folder" />
