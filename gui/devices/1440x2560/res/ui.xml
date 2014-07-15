@@ -14,7 +14,6 @@
 		<resource name="font" type="font" filename="Roboto-Condensed-40" />
 		<resource name="mediumfont" type="font" filename="Roboto-Condensed-40" />
 		<resource name="filelist" type="font" filename="Roboto-Condensed-40" />
-		<resource name="top_bar" type="image" filename="top-bar.jpg" />
 		<resource name="main_button" type="image" filename="menu-button" />
 		<resource name="file_icon" type="image" filename="file" />
 		<resource name="folder_icon" type="image" filename="folder" />
@@ -219,7 +218,7 @@
 			<object type="text" color="%text_color%">
 				<font resource="font" />
 				<placement x="239" y="20" />
-				<text>TEAM Gummy Recovery Project  v%tw_version%</text>
+				<text>Gummified Team Win Recovery Project  v%tw_version%</text>
 			</object>
 
 			<object type="text" color="%text_color%">
