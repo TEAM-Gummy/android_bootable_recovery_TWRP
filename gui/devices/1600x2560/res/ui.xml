@@ -125,6 +125,9 @@
 		<variable name="console_x" value="0" />
 		<variable name="console_width" value="1600" />
 		<variable name="console_foreground" value="#A0A0A0" />
+		<variable name="warning" value="#F8F8A0" />
+		<variable name="error" value="#FF4040" />
+		<variable name="highlight" value="#33B5E5" />
 		<variable name="console_background" value="#303030" />
 		<variable name="console_scroll" value="#303030" />
 		<variable name="console_action_height" value="938" />
@@ -2058,6 +2061,18 @@
 				<text>%tw_operation% %tw_partition%</text>
 			</object>
 
+			<object type="text" color="%text_color%">
+				<font resource="font" />
+				<placement x="%center_x%" y="%row2_text_y%" placement="5" />
+				<text>%tw_file_progress%</text>
+			</object>
+
+			<object type="text" color="%text_color%">
+				<font resource="font" />
+				<placement x="%center_x%" y="%row3_text_y%" placement="5" />
+				<text>%tw_size_progress%</text>
+			</object>
+
 			<object type="template" name="action_page_console" />
 
 			<object type="template" name="progress_bar" />
@@ -2429,6 +2444,12 @@
 				<font resource="font" />
 				<placement x="%center_x%" y="%row1_text_y%" placement="5" />
 				<text>%tw_operation% %tw_partition%</text>
+			</object>
+
+			<object type="text" color="%text_color%">
+				<font resource="font" />
+				<placement x="%center_x%" y="%row2_text_y%" placement="5" />
+				<text>%tw_size_progress%</text>
 			</object>
 
 			<object type="template" name="action_page_console" />
@@ -3899,7 +3920,7 @@
 				<resource base="slider" used="slider-used" touch="slider-touch" />
 				<action function="page">filemanageracction</action>
 			</object>
-			
+
 			<object type="text" color="%text_color%">
 				<font resource="font" />
 				<placement x="%center_x%" y="%slider_text_y%" placement="4" />
@@ -3915,7 +3936,7 @@
 				<touch key="home" />
 				<action function="page">main</action>
 			</object>
-				
+
 			<object type="template" name="footer" />
 		</page>
 

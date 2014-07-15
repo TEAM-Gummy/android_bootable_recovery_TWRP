@@ -299,6 +299,30 @@ std::string TWFunc::Remove_Trailing_Slashes(const std::string& path, bool leaveL
 	return res;
 }
 
+vector<string> TWFunc::split_string(const string &in, char del, bool skip_empty) {
+	vector<string> res;
+
+	if (in.empty() || del == '\0')
+		return res;
+
+	string field;
+	istringstream f(in);
+	if (del == '\n') {
+		while(getline(f, field)) {
+			if (field.empty() && skip_empty)
+				continue;
+		res.push_back(field);
+		}
+	} else {
+		while(getline(f, field, del)) {
+			if (field.empty() && skip_empty)
+				continue;
+			res.push_back(field);
+		}
+	}
+	return res;
+}
+
 #ifndef BUILD_TWRPTAR_MAIN
 
 // Returns "/path" from a full /path/to/file.name
@@ -1069,16 +1093,6 @@ void TWFunc::Fixup_Time_On_Boot()
 	struct timeval tv;
 	struct dirent *dt;
 	std::string ats_path;
-
-
-	// Don't fix the time of it already is over year 2000, it is likely already okay, either
-	// because the RTC is fine or because the recovery already set it and then crashed
-	gettimeofday(&tv, NULL);
-	if(tv.tv_sec > 946684800) // timestamp of 2000-01-01 00:00:00
-	{
-		LOGINFO("TWFunc::Fixup_Time: not fixing time, it seems to be already okay (after year 2000).\n");
-		return;
-	}
 
 	if(!PartitionManager.Mount_By_Path("/data", false))
 		return;
