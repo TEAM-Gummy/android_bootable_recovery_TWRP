@@ -10,7 +10,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/include
 LOCAL_MODULE:= libfs_mgrtwrp
 LOCAL_SHARED_LIBRARIES := libext4_utils
 LOCAL_STATIC_LIBRARIES := liblogwraptwrp libmincrypttwrp
-LOCAL_C_INCLUDES += system/extras/ext4_utils bootable/recovery/libmincrypt/includes
+LOCAL_C_INCLUDES += system/extras/ext4_utils bootable/recovery-twrp/libmincrypt/includes
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/include
 
 include $(BUILD_STATIC_LIBRARY)
