@@ -66,6 +66,7 @@ ifeq ($(TW_OEM_BUILD),true)
     LOCAL_CFLAGS += -DTW_OEM_BUILD
 endif
 
+ifeq ($(RECOVERY_VARIANT),twrp)
 ifeq ($(DEVICE_RESOLUTION),)
 $(warning ********************************************************************************)
 $(warning * DEVICE_RESOLUTION is NOT SET in BoardConfig.mk )
@@ -80,6 +81,7 @@ $(warning * DEVICE_RESOLUTION ($(DEVICE_RESOLUTION)) does NOT EXIST in bootable/
 $(warning * Please choose an existing theme or create a new one for your device )
 $(warning ********************************************************************************)
 $(error stopping)
+endif
 endif
 
 LOCAL_C_INCLUDES += bionic external/stlport/stlport $(commands_recovery_local_path)/gui/devices/$(DEVICE_RESOLUTION)
