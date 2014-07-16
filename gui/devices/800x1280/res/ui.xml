@@ -10,10 +10,10 @@
 	</details>
 
 	<resources>
+		<resource name="tg_background" type="image" filename="tg_background" />
 		<resource name="font" type="font" filename="Roboto-Condensed-30" />
 		<resource name="mediumfont" type="font" filename="Roboto-Condensed-30" />
 		<resource name="filelist" type="font" filename="Roboto-Condensed-30" />
-		<resource name="top_bar" type="image" filename="top-bar.jpg" />
 		<resource name="main_button" type="image" filename="menu-button" />
 		<resource name="file_icon" type="image" filename="file" />
 		<resource name="folder_icon" type="image" filename="folder" />
@@ -94,7 +94,7 @@
 		<variable name="slider_text_y" value="1096" />
 		<variable name="button_text_color" value="#AAAAAA" />
 		<variable name="text_color" value="#FFFFFF" />
-		<variable name="text_success_color" value="#33B5E5" />
+		<variable name="text_success_color" value="#49E20E" />
 		<variable name="text_fail_color" value="#FF0101" />
 		<variable name="highlight_color" value="#90909080" />
 		<variable name="caps_highlight_color" value="#33B5E580" />
@@ -112,7 +112,7 @@
 		<variable name="sort_col3_button_x" value="530" />
 		<variable name="input_width" value="750" />
 		<variable name="input_height" value="50" />
-		<variable name="input_background_color" value="#303030" />
+		<variable name="input_background_color" value="#1c1c1c" />
 		<variable name="input_cursor_color" value="#33B5E5" />
 		<variable name="input_cursor_width" value="3" />
 		<variable name="console_x" value="0" />
@@ -121,21 +121,21 @@
 		<variable name="warning" value="#F8F8A0" />
 		<variable name="error" value="#FF4040" />
 		<variable name="highlight" value="#33B5E5" />
-		<variable name="console_background" value="#303030" />
-		<variable name="console_scroll" value="#303030" />
+		<variable name="console_background" value="#1c1c1c" />
+		<variable name="console_scroll" value="#1c1c1c" />
 		<variable name="console_action_height" value="470" />
 		<variable name="console_install_height" value="600" />
 		<variable name="console_installdone_height" value="440" />
 		<variable name="fileselector_x" value="5" />
 		<variable name="fileselector_width" value="790" />
 		<variable name="fileselector_install_height" value="750" />
-		<variable name="fileselector_header_background" value="#202020" />
+		<variable name="fileselector_header_background" value="#1c1c1c" />
 		<variable name="fileselector_header_textcolor" value="#AAAAAA" />
 		<variable name="fileselector_header_separatorcolor" value="#33B5E5" />
 		<variable name="fileselector_header_separatorheight" value="3" />
 		<variable name="fileselector_separatorcolor" value="#505050" />
 		<variable name="fileselector_separatorheight" value="2" />
-		<variable name="fileselector_background" value="#303030" />
+		<variable name="fileselector_background" value="#1c1c1c" />
 		<variable name="fileselector_highlight_color" value="#505050" />
 		<variable name="fileselector_highlight_font_color" value="#33B5E5" />
 		<variable name="fileselector_spacing" value="36"/>
@@ -148,7 +148,7 @@
 		<variable name="listbox_x" value="5" />
 		<variable name="listbox_width" value="790" />
 		<variable name="listbox_tz_height" value="580" />
-		<variable name="listbox_background" value="#303030" />
+		<variable name="listbox_background" value="#1c1c1c" />
 		<variable name="listbox_spacing" value="16" />
 		<variable name="sd_plus_x" value="350" />
 		<variable name="sdext_text_x" value="115" />
@@ -201,17 +201,17 @@
 
 	<templates>
 		<template name="header">
-			<background color="#000000FF" />
+			<background color="#000000" />
 
 			<object type="image">
-				<image resource="top_bar" />
+				<image resource="tg_background" />
 				<placement x="0" y="0" />
 			</object>
 
 			<object type="text" color="%text_color%">
 				<font resource="font" />
 				<placement x="120" y="10" />
-				<text>Team Win Recovery Project  v%tw_version%</text>
+				<text>Gummified Team Win Recovery Project  v%tw_version%</text>
 			</object>
 
 			<object type="text" color="%text_color%">
