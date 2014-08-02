@@ -95,9 +95,20 @@ LOCAL_MODULE_TAGS := eng
 LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/res
 TWRP_RES_LOC := $(commands_recovery_local_path)/gui/devices/common/res
+TWRP_COMMON_XML := $(hide) echo "No common TWRP XML resources"
 
 ifeq ($(TW_CUSTOM_THEME),)
+	PORTRAIT := 320x480 480x800 480x854 540x960 720x1280 800x1280 1080x1920 1200x1920 1440x2560 1600x2560
+	LANDSCAPE := 800x480 1024x600 1024x768 1280x800 1920x1200 2560x1600
+	WATCH := 240x240 280x280 320x320
 	TWRP_THEME_LOC := $(commands_recovery_local_path)/gui/devices/$(DEVICE_RESOLUTION)/res
+	ifneq ($(filter $(DEVICE_RESOLUTION), $(PORTRAIT)),)
+		TWRP_COMMON_XML := cp -fr $(commands_recovery_local_path)/gui/devices/portrait/res/* $(TARGET_RECOVERY_ROOT_OUT)/res/
+	else ifneq ($(filter $(DEVICE_RESOLUTION), $(LANDSCAPE)),)
+		TWRP_COMMON_XML := cp -fr $(commands_recovery_local_path)/gui/devices/landscape/res/* $(TARGET_RECOVERY_ROOT_OUT)/res/
+	else ifneq ($(filter $(DEVICE_RESOLUTION), $(WATCH)),)
+		TWRP_COMMON_XML := cp -fr $(commands_recovery_local_path)/gui/devices/watch/res/* $(TARGET_RECOVERY_ROOT_OUT)/res/
+	endif
 else
 	TWRP_THEME_LOC := $(TW_CUSTOM_THEME)
 endif
@@ -112,6 +123,7 @@ $(TWRP_RES_GEN):
 	mkdir -p $(TARGET_RECOVERY_ROOT_OUT)/res/
 	cp -fr $(TWRP_RES_LOC)/* $(TARGET_RECOVERY_ROOT_OUT)/res/
 	cp -fr $(TWRP_THEME_LOC)/* $(TARGET_RECOVERY_ROOT_OUT)/res/
+	$(TWRP_COMMON_XML)
 	mkdir -p $(TARGET_RECOVERY_ROOT_OUT)/sbin/
 	ln -sf $(TWRP_SH_TARGET) $(TARGET_RECOVERY_ROOT_OUT)/sbin/sh
 	ln -sf /sbin/pigz $(TARGET_RECOVERY_ROOT_OUT)/sbin/gzip
