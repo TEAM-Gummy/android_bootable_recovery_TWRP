@@ -2107,7 +2107,7 @@
 
 			<object type="button">
 				<highlight color="%highlight_color%" />
-				<condition var1="tw_has_usb_storage" var2="0" />
+				<condition var1="tw_has_usb_storage" var2="1" />
 				<placement x="%col1_x%" y="row4_y" />
 				<font resource="font" color="%button_text_color%" />
 				<text>USB Storage</text>
@@ -2592,7 +2592,7 @@
 					<action function="set">tw_brightness=%tw_brightness_max%</action>
 					<action function="compute">tw_brightness*%tw_brightness_pct%</action>
 					<action function="compute">tw_brightness/100</action>
-					<action function="cmd">echo %tw_brightness% > &quot;%tw_brightness_file%&quot;</action>
+					<action function="setbrightness">%tw_brightness%</action>
 				</actions>
 			</object>
 

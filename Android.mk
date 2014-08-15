@@ -269,6 +269,9 @@ endif
 ifneq ($(TW_BRIGHTNESS_PATH),)
 	LOCAL_CFLAGS += -DTW_BRIGHTNESS_PATH=$(TW_BRIGHTNESS_PATH)
 endif
+ifneq ($(TW_SECONDARY_BRIGHTNESS_PATH),)
+	LOCAL_CFLAGS += -DTW_SECONDARY_BRIGHTNESS_PATH=$(TW_SECONDARY_BRIGHTNESS_PATH)
+endif
 ifneq ($(TW_MAX_BRIGHTNESS),)
 	LOCAL_CFLAGS += -DTW_MAX_BRIGHTNESS=$(TW_MAX_BRIGHTNESS)
 endif
@@ -407,6 +410,9 @@ ifneq ($(TW_NO_EXFAT), true)
 endif
 ifeq ($(TW_INCLUDE_CRYPTO), true)
     include $(commands_recovery_local_path)/crypto/ics/Android.mk
+endif
+ifneq ($(TW_OEM_BUILD),true)
+    include $(commands_recovery_local_path)/orscmd/Android.mk
 endif
 
 # FB2PNG
