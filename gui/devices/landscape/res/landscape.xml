@@ -903,6 +903,45 @@
 
 			<object type="button">
 				<highlight color="%highlight_color%" />
+				<conditions>
+					<condition var1="tw_has_mtp" var2="1" />
+					<condition var1="tw_mtp_enabled" var2="0" />
+				</conditions>
+				<placement x="%col3_x%" y="row1_y" />
+				<font resource="font" color="%button_text_color%" />
+				<text>Enable MTP</text>
+				<image resource="main_button" />
+				<action function="startmtp"></action>
+			</object>
+
+			<object type="button">
+				<highlight color="%highlight_color%" />
+				<conditions>
+					<condition var1="tw_has_mtp" var2="1" />
+					<condition var1="tw_mtp_enabled" var2="1" />
+				</conditions>
+				<placement x="%col3_x%" y="row1_y" />
+				<font resource="font" color="%button_text_color%" />
+				<text>Disable MTP</text>
+				<image resource="main_button" />
+				<action function="stopmtp"></action>
+			</object>
+
+			<object type="button">
+				<highlight color="%highlight_color%" />
+				<conditions>
+					<condition var1="tw_is_encrypted" var2="1" />
+					<condition var1="tw_is_decrypted" var2="0" />
+				</conditions>
+				<placement x="%col3_x%" y="row1_y" />
+				<font resource="font" color="%button_text_color%" />
+				<text>Decrypt Data</text>
+				<image resource="main_button" />
+				<action function="page">decrypt</action>
+			</object>
+
+			<object type="button">
+				<highlight color="%highlight_color%" />
 				<fill color="%button_fill_color%" />
 				<placement x="%col3_x%" y="%backup_storage_y%" w="%button_fill_main_width%" h="%button_fill_half_height%" />
 				<font resource="font" color="%button_text_color%" />
@@ -1347,6 +1386,26 @@
 			<object type="template" name="footer" />
 		</page>
 
+		<page name="refreshfilesystem">
+			<object type="action">
+				<condition var1="tw_check_partition_list" op="=" var2="1" />
+				<actions>
+					<action function="set">partitionlisterror=0</action>
+					<action function="getpartitiondetails"></action>
+					<action function="page">selectfilesystem</action>
+				</actions>
+			</object>
+
+			<object type="action">
+				<condition var1="tw_check_partition_list" op="!=" var2="1" />
+				<actions>
+					<action function="set">partitionlisterror=1</action>
+					<action function="set">tw_wipe_list=</action>
+					<action function="page">advancedwipe</action>
+				</actions>
+			</object>
+		</page>
+
 		<page name="selectfilesystem">
 			<object type="template" name="header" />
 
@@ -1382,7 +1441,7 @@
 				<text>EXT2</text>
 				<image resource="main_button" />
 				<actions>
-					<action function="set">tw_back=selectfilesystem</action>
+					<action function="set">tw_back=refreshfilesystem</action>
 					<action function="set">tw_action=changefilesystem</action>
 					<action function="set">tw_action_param=%tw_partition_mount_point%</action>
 					<action function="set">tw_action_new_file_system=ext2</action>
@@ -1404,7 +1463,7 @@
 				<text>EXT3</text>
 				<image resource="main_button" />
 				<actions>
-					<action function="set">tw_back=selectfilesystem</action>
+					<action function="set">tw_back=refreshfilesystem</action>
 					<action function="set">tw_action=changefilesystem</action>
 					<action function="set">tw_action_param=%tw_partition_mount_point%</action>
 					<action function="set">tw_action_new_file_system=ext3</action>
@@ -1426,7 +1485,7 @@
 				<text>EXT4</text>
 				<image resource="main_button" />
 				<actions>
-					<action function="set">tw_back=selectfilesystem</action>
+					<action function="set">tw_back=refreshfilesystem</action>
 					<action function="set">tw_action=changefilesystem</action>
 					<action function="set">tw_action_param=%tw_partition_mount_point%</action>
 					<action function="set">tw_action_new_file_system=ext4</action>
@@ -1448,7 +1507,7 @@
 				<text>F2FS</text>
 				<image resource="main_button" />
 				<actions>
-					<action function="set">tw_back=selectfilesystem</action>
+					<action function="set">tw_back=refreshfilesystem</action>
 					<action function="set">tw_action=changefilesystem</action>
 					<action function="set">tw_action_param=%tw_partition_mount_point%</action>
 					<action function="set">tw_action_new_file_system=f2fs</action>
@@ -1470,7 +1529,7 @@
 				<text>FAT</text>
 				<image resource="main_button" />
 				<actions>
-					<action function="set">tw_back=selectfilesystem</action>
+					<action function="set">tw_back=refreshfilesystem</action>
 					<action function="set">tw_action=changefilesystem</action>
 					<action function="set">tw_action_param=%tw_partition_mount_point%</action>
 					<action function="set">tw_action_new_file_system=vfat</action>
@@ -1492,7 +1551,7 @@
 				<text>exFAT</text>
 				<image resource="main_button" />
 				<actions>
-					<action function="set">tw_back=selectfilesystem</action>
+					<action function="set">tw_back=refreshfilesystem</action>
 					<action function="set">tw_action=changefilesystem</action>
 					<action function="set">tw_action_param=%tw_partition_mount_point%</action>
 					<action function="set">tw_action_new_file_system=exfat</action>
