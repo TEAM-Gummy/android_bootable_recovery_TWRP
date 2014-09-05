@@ -75,9 +75,9 @@ $(warning **********************************************************************
 $(error stopping)
 endif
 
-ifeq "$(wildcard bootable/recovery-twrp/gui/devices/$(DEVICE_RESOLUTION))" ""
+ifeq "$(wildcard bootable/recovery/gui/devices/$(DEVICE_RESOLUTION))" ""
 $(warning ********************************************************************************)
-$(warning * DEVICE_RESOLUTION ($(DEVICE_RESOLUTION)) does NOT EXIST in bootable/recovery-twrp/gui/devices )
+$(warning * DEVICE_RESOLUTION ($(DEVICE_RESOLUTION)) does NOT EXIST in bootable/recovery/gui/devices )
 $(warning * Please choose an existing theme or create a new one for your device )
 $(warning ********************************************************************************)
 $(error stopping)
